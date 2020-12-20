@@ -88,7 +88,7 @@ def eventHander():            #监听各种事件
                             pygame.display.update()                #更新视图    
 
                             updateBroadScore()
-                            p = funcMaxMin(1)
+                            p = funcMaxMin(2)
                             s = "下一步棋可以是: 横坐标 -> " + str(p.y) + " 纵坐标 - >" + str(p.x)
                             print(s)
                             initChessList[p.x][p.y].value = 1
@@ -151,7 +151,7 @@ def judgeResult(i,j,value):   #横向判断
     return flag
 
 def getScoreWithPoint(x,y,value):   #横向判断
-    count1 = 0
+    count1 = 1
     count2 = 0
     enemyNum = 0
     empty = -1
@@ -195,17 +195,17 @@ def getScoreWithPoint(x,y,value):   #横向判断
         if t.value == value:
             count2 += 1
             if empty != -1:
-                empty += 1 # 一脸萌
+                empty += 1
             continue
         else:
             enemyNum += 1
             break
     if debug:
         print('- - - count:')    
-        print(count1 + count2 + 1)
-    result += countToScore(count1 + count2 + 1, enemyNum, empty)
+        print(count1 + count2)
+    result += countToScore(count1 + count2, enemyNum, empty)
 
-    count1 = 0
+    count1 = 1
     count2 = 0
     enemyNum = 0
     empty = -1
@@ -246,17 +246,17 @@ def getScoreWithPoint(x,y,value):   #横向判断
         if t.value == value:
             count2 += 1
             if empty != -1:
-                empty += 1 # 一脸萌
+                empty += 1 
             continue
         else:
             enemyNum += 1
             break
     if debug:
         print('| | | count:')    
-        print(count1 + count2 + 1)
-    result += countToScore(count1 + count2 + 1, enemyNum, empty)
+        print(count1 + count2)
+    result += countToScore(count1 + count2, enemyNum, empty)
 
-    count1 = 0
+    count1 = 1
     count2 = 0
     enemyNum = 0
     empty = -1
@@ -294,24 +294,24 @@ def getScoreWithPoint(x,y,value):   #横向判断
         t = initChessList[i][j]
         if t.value == 0:
             if empty == -1 and i > 0 and j > 0 and initChessList[i - 1][j - 1].value == value:
-                empty = 0 #这里的参数自己搞一搞
+                empty = 0 #反过来数了，初始为0（算上必有的棋子，位置应该是1）
                 continue
             else:
                 break
         if t.value == value:
             count2 += 1
             if empty != -1:
-                empty += 1 # 一脸萌
+                empty += 1 #左边多了相同棋子，empty的位置向后顺延
             continue
         else:
             enemyNum += 1
             break
     if debug:
         print('\ \ \ count:')    
-        print(count1 + count2 + 1)
-    result += countToScore(count1 + count2 + 1, enemyNum, empty)
+        print(count1 + count2)
+    result += countToScore(count1 + count2, enemyNum, empty)
 
-    count1 = 0  
+    count1 = 1
     count2 = 0
     enemyNum = 0
     empty = -1
@@ -349,14 +349,14 @@ def getScoreWithPoint(x,y,value):   #横向判断
         t = initChessList[i][j]
         if t.value == 0:
             if empty == -1 and i > 0 and j < 14 and initChessList[i - 1][j + 1].value == value:
-                empty = 0 #这里的参数自己搞一搞
+                empty = 0 
                 continue
             else:
                 break
         if t.value == value:
             count2 += 1
             if empty != -1:
-                empty += 1 # 一脸萌
+                empty += 1 
             continue
         else:
             enemyNum += 1
@@ -364,8 +364,8 @@ def getScoreWithPoint(x,y,value):   #横向判断
     
     if debug:
         print('/ / / count:')    
-        print(count1 + count2 + 1)
-    result += countToScore(count1 + count2 + 1, enemyNum, empty)
+        print(count1 + count2)
+    result += countToScore(count1 + count2, enemyNum, empty)
 
     # if value == 1: # 如果是电脑
     #     broadComScore[x][y] = result
@@ -410,7 +410,7 @@ def countToScore(count, block, empty):
             elif count == 4:
                 return BLOCKED_FOUR
 
-    elif empty == 1 and empty == count-1:
+    elif empty == 1 or empty == count-1: #这里是 or
         #第1个是空位
         if count >= 6:
             return FIVE
@@ -435,7 +435,7 @@ def countToScore(count, block, empty):
             elif count == 5:
                 return BLOCKED_FOUR
 
-    elif empty == 2 and empty == count-2:
+    elif empty == 2 or empty == count-2:
         #第二个是空位
         if count >= 7:
             return FIVE
@@ -461,7 +461,7 @@ def countToScore(count, block, empty):
         if block == 2 and (count == 4 or count == 5 or count == 6):
             return BLOCKED_FOUR
 
-    elif empty == 3 and empty == count-3:
+    elif empty == 3 or empty == count-3:
         if count >= 8:
             return FIVE
         
@@ -483,7 +483,7 @@ def countToScore(count, block, empty):
             if count == 4 or count == 5 or count == 6 or count == 7:
                 return BLOCKED_FOUR
 
-    elif empty == 4 and empty == count-4:
+    elif empty == 4 or empty == count-4:
         if count >= 9:
             return FIVE
         
@@ -500,7 +500,7 @@ def countToScore(count, block, empty):
         if block == 2:
             if count == 8 or count == 5 or count == 6 or count == 7:
                 return BLOCKED_FOUR
-    elif empty == 5 and empty == count-5:
+    elif empty == 5 or empty == count-5:
         return FIVE
     
     return 0
@@ -586,7 +586,7 @@ MIN = -100000000
 # 极大极小数
 def funcMaxMin(deep):
     # 拿到
-    global ABcut
+    global ABcut  #统计剪枝次数
     ABcut = 0
     best = MIN
     points = []
@@ -609,7 +609,7 @@ def funcMaxMin(deep):
             resultPoints.append(p)
     
     print("剪枝----->" + str(ABcut))
-    return random.choice(resultPoints)  # 这里需要改成随机的 已改
+    return random.choice(resultPoints)  
 
 
 def funcMax(deep, p, alpha, beta):
