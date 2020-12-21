@@ -5,7 +5,7 @@ import random
 from pygame.locals import *
 
 initChessList = []          #保存的是棋盘坐标
-initRole = 1                #1：代表白棋； 2：代表黑棋
+initRole = 2                #1：代表白棋； 2：代表黑棋
 resultFlag = 0              #结果标志
 
 broadHumScore = []
@@ -15,6 +15,7 @@ debug = False
 
 screen = None
 blackStorn = None
+whiteStorn = None
 ABcut = 0
 
 class StornPoint():
@@ -27,6 +28,8 @@ class StornPoint():
         self.x = x            #初始化成员变量
         self.y = y
         self.value = value
+
+lastP = StornPoint(-1, -1, -1)
 
 class SimplePoint():
     def __init__(self,x,y):
@@ -55,7 +58,7 @@ def initChessSquare(x,y):     #初始化棋盘
 
 def eventHander():            #监听各种事件
     for event in pygame.event.get():
-        global initRole,resultFlag
+        global initRole,resultFlag,lastP
         if event.type == QUIT:#事件类型为退出时
             pygame.quit()
             sys.exit()
@@ -85,13 +88,19 @@ def eventHander():            #监听各种事件
                             print(s)
                             initRole = 1                #切换角色
                             screen.blit(blackStorn,(point.x-18,point.y-18))
+                            if lastP.x != -1 and lastP.y != -1:
+                                 screen.blit(whiteStorn,(lastP.x-19,lastP.y-19))
+                            lastP.x = -1
+                            lastP.y = -1
                             pygame.display.update()                #更新视图    
 
                             updateBroadScore()
-                            p = funcMaxMin(2)
+                            p = funcMaxMin(3)
                             s = "下一步棋可以是: 横坐标 -> " + str(p.y) + " 纵坐标 - >" + str(p.x)
                             print(s)
                             initChessList[p.x][p.y].value = 1
+                            lastP.x = initChessList[p.x][p.y].x          #记录之前的p
+                            lastP.y = initChessList[p.x][p.y].y 
                             if judgeResult(p.x,p.y,1):               #如果条件成立，证明五子连珠
                                 resultFlag = 1 #获取成立的棋子颜色
                                 print("白棋赢")
@@ -594,10 +603,19 @@ def funcMaxMin(deep):
     s = "第一次拿到的points" + str(len(points))
     print(s)
     resultPoints = []
+    alpha = MAX
+    beta = MIN
+
 
     for p in points:
+
+        if best > beta:
+            tempBeta = best
+        else :
+            tempBeta = beta
+
         initChessList[p.x][p.y].value = 1
-        v = funcMin(deep - 1, p, MAX, MIN)
+        v = funcMin(deep - 1, p, MAX, tempBeta)
         s = "极大极小第一层 横坐标 - >" + str(p.y) + "纵坐标 - >" + str(p.x) + "v - > " + str(v)
         print(s)
         initChessList[p.x][p.y].value = 0
@@ -605,6 +623,8 @@ def funcMaxMin(deep):
             best = v
             resultPoints = []
             resultPoints.append(p)
+            # if v >= 10000000: 不能直接放在这，>10000000不一定是最优解
+            #     break
         if best == v:
             resultPoints.append(p)
     
@@ -676,7 +696,7 @@ def funcMin(deep, p, alpha, beta):
 
 # 加载素材
 def main():
-    global initChessList,resultFlag,screen,blackStorn
+    global initChessList,resultFlag,screen,blackStorn, whiteStorn,initRole,lastP
     initChessSquare(27,27)
     pygame.init()     # 初始化游戏环境
     screen = pygame.display.set_mode((620,620),0,0)          # 创建游戏窗口 # 第一个参数是元组：窗口的长和宽
@@ -685,9 +705,11 @@ def main():
     whiteStorn = pygame.image.load("images/storn_white.png") #加载白棋图片
     blackStorn = pygame.image.load("images/storn_black.png") #加载黑棋图片
     resultStorn = pygame.image.load("images/resultStorn.jpg")#加载 赢 时的图片
-    resultShu = pygame.image.load("images/shu100.jpg")#加载 赢 时的图片
-    rect = blackStorn.get_rect()
+    resultShu = pygame.image.load("images/shu100.jpg")#加载 输 时的图片
+    lastStorn = pygame.image.load("images/焦点36.png")#加载 上次 的图片
 
+    rect = blackStorn.get_rect()
+    initChessList[7][7].value = 1
     while True:
         screen.blit(background,(0,0))
         for temp in initChessList:
@@ -696,6 +718,8 @@ def main():
                     screen.blit(whiteStorn,(point.x-18,point.y-18))
                 elif point.value == 2:        #当棋子类型为2时，绘制黑棋
                     screen.blit(blackStorn,(point.x-18,point.y-18))
+                if lastP.x == point.x and lastP.y == point.y:
+                    screen.blit(lastStorn,(point.x-18,point.y-18))
 
         if resultFlag >0:
             initChessList = []                 # 清空棋盘
@@ -709,6 +733,8 @@ def main():
         if resultFlag >0:
             time.sleep(5)
             resultFlag = 0                     #置空之前的获胜结果
+            initChessList[7][7].value = 1
+            initRole = 2
         eventHander()                          #调用之前定义的事件函数
 if __name__ == '__main__':
     main()        #调用主函数绘制窗口
