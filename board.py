@@ -355,17 +355,17 @@ def getScoreWithPoint(x,y,value,dir):   #判断分数
 
     return result
 
+# 定义策略
+ONE = 10
+TWO = 100
+THREE = 1000
+FOUR = 100000
+FIVE = 10000000
+BLOCKED_ONE = 1
+BLOCKED_TWO =  10
+BLOCKED_THREE = 100
+BLOCKED_FOUR = 10000
 def countToScore(count, block, empty):
-    # 定义策略
-    ONE = 10
-    TWO = 100
-    THREE = 1000
-    FOUR = 100000
-    FIVE = 10000000
-    BLOCKED_ONE = 1
-    BLOCKED_TWO =  10
-    BLOCKED_THREE = 100
-    BLOCKED_FOUR = 10000
     #没有空位
     if empty <= 0:
         if count >= 5:
@@ -488,23 +488,139 @@ def countToScore(count, block, empty):
 
 # 获取剩下的可能下的点
 # 直接看每个点是否有邻居即可！！！
-def getAllNextPoints(deep):
+def getAllNextPoints1(x):
     neighbors = []
     nextNeighbors = []
     i = 0
     for tempList in initChessList:
         j = 0
         for point in tempList:
-            if point.value == 0:
-                if hasNeighbor(i, j, 1):
-                    neighbors.append(SimplePoint(i, j))
-                    # s= "points: i:" + str(i) + "j:" + str(j)
-                    # print(s)
-                elif deep < -1 and hasNeighbor(i, j, 2): # 这里加个deep的判断
-                    nextNeighbors.append(SimplePoint(i, j))
+            if point.value == 0 and hasNeighbor(i, j, 1):
+                neighbors.append(SimplePoint(i, j))
+                # s= "points: i:" + str(i) + "j:" + str(j)
+                # print(s)
             j += 1
         i += 1
     return neighbors + nextNeighbors
+
+# 升级为启发式函数
+def getAllNextPoints(role):
+    fives = []
+    comfours=[]
+    humfours=[]
+    comblockedfours = []
+    humblockedfours = []
+    comtwothrees=[]
+    humtwothrees=[]
+    comthrees = []
+    humthrees = []
+    comtwos = []
+    humtwos = []
+    neighbors = []
+
+    i = 0
+    for tempList in initChessList:
+        j = 0
+        for point in tempList:
+            if point.value == 0 and hasNeighbor(i, j, 1):
+                scoreHum = broadHumScore[i][j]
+                scoreCom = broadComScore[i][j]
+                # if i == 5 and j == 8 and role == 2:
+                    # print("scoreHum:" + str(broadHumScore[i][j]))
+                p = SimplePoint(i, j)
+                if scoreCom >= FIVE: #先看电脑能不能连成5
+                    fives.append(p)
+                elif scoreHum >= FIVE: #再看玩家能不能连成5,别急着返回，因为遍历还没完成，说不定电脑自己能成五。
+                    fives.append(p)
+                elif scoreCom >= FOUR:
+                    comfours.append(p)
+                elif scoreHum >= FOUR:
+                    humfours.append(p)
+                elif scoreCom >= BLOCKED_FOUR:
+                    comblockedfours.append(p)
+                elif scoreHum >= BLOCKED_FOUR:
+                    humblockedfours.append(p)
+                elif scoreCom >= 2*THREE:
+                #能成双三也行
+                    comtwothrees.append(p)
+                elif scoreHum >= 2*THREE:
+                    humtwothrees.append(p)
+                elif scoreCom >= THREE:
+                    comthrees.append(p)
+                elif scoreHum >= THREE:
+                    humthrees.append(p)
+                elif scoreCom >= TWO:
+                    comtwos.insert(0, p)
+                elif scoreHum >= TWO:
+                    humtwos.insert(0, p)
+                else:
+                    neighbors.append(p)
+            j += 1
+        i += 1
+    
+    #如果成五，是必杀棋，直接返回
+    if len(fives) > 0:
+        return fives
+    
+    # 自己能活四，则直接活四，不考虑冲四
+    if role == 1 and len(comfours) > 0:
+        return comfours
+    if role == 2 and len(humfours) > 0:
+        return humfours
+
+    # 对面有活四冲四，自己冲四都没，则只考虑对面活四 （此时对面冲四就不用考虑了)
+    
+    if role == 1 and len(humfours) > 0 and len(comblockedfours) <= 0:
+        return humfours
+    if role == 2 and len(comfours) > 0 and len(humblockedfours) <= 0:
+        return comfours
+
+    # 对面有活四自己有冲四，则都考虑下
+    if role == 1:
+        fours = comfours + humfours
+        blockedfours = comblockedfours + humblockedfours
+    else:
+        fours = comfours + humfours
+        blockedfours = humblockedfours + comblockedfours
+
+    if len(fours) > 0:
+        return fours + blockedfours
+
+    result = []
+    if role == 1:
+      result = comtwothrees + humtwothrees + comblockedfours + humblockedfours + comthrees + humthrees
+    
+    if role == 2:
+      result = humtwothrees + comtwothrees + humblockedfours + comblockedfours + humthrees + comthrees
+
+    # result.sort(function(a, b) { return b.score - a.score })
+
+    # 双三很特殊，因为能形成双三的不一定比一个活三强
+    if len(comtwothrees) > 0 or len(humtwothrees) > 0: 
+      return result
+    
+
+
+    # 只返回大于等于活三的棋
+    # if (onlyThrees) {
+    #   return result
+    # }
+
+
+    twos = []
+    if role == 1:
+        twos = comtwos + humtwos
+    else :
+        twos = humtwos + comtwos
+
+    # twos.sort(function(a, b) { return b.score - a.score })
+    if twos != None and len(twos) > 0:
+        result += twos
+    else :
+        result += neighbors
+
+    return result
+
 
 def hasNeighbor(x, y, len):
     if x + len < 15 and initChessList[x + len][y].value != 0:
@@ -555,39 +671,53 @@ def updateBroadScore(): # 先全部更新，后面再针对性更新
 
 # 更新某个点
 def updatePointScore(x, y): # 先全部更新，后面再针对性更新
-    for i in range(-4, 5):
+    for i in range(0, 9): # 这里没有负数
         tx = x
-        ty = y + i
+        ty = y + i - 4
+        if x == 6 and y == 8:
+            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
         if ty < 0 or ty > 14:
             continue
-        update(x, y, 0)
+        update(tx, ty, 0)  # 靠，忘记改update了
     
-    for i in range(-4, 5):
-        tx = x + i
+    for i in range(0, 9):
+        tx = x + i - 4
         ty = y
+        if x == 6 and y == 8:
+            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
         if tx < 0 or tx > 14:
             continue
-        update(x, y, 1)
+        if tx == 5 and ty == 8:
+            print("updatePointScore 8 5 update:")
+        update(tx, ty, 1)
 
-    for i in range(-4, 5):
-        tx = x + i
-        ty = y - i
+    for i in range(0, 9):
+        tx = x + i - 4
+        ty = y + i - 4
+        if x == 6 and y == 8:
+            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
         if ty < 0 or ty > 14 or tx < 0 or tx > 14:
             continue
-        update(x, y, 2)
+        update(tx, ty, 2)
 
-    for i in range(-4, 5):
-        tx = x - i
-        ty = y + i
+    for i in range(0, 9):
+        tx = x + i - 4
+        ty = y - i - 4
+        if x == 6 and y == 8:
+            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
         if ty < 0 or ty > 14 or tx < 0 or tx > 14:
             continue
-        update(x, y, 3)
+        update(tx, ty, 3)
 
 
 
 def update(x, y, dir): # 用于更新点里面的函数，指定方向更新
+    if x == 5 and y == 8:
+        print("x5   y8 --->" + str(initChessList[x][y].value))
     if initChessList[x][y].value == 0:
         broadHumScore[x][y] = getScoreWithPoint(x, y, 2, dir)
+        if x == 5 and y == 8 and dir == 0:
+            print("scoreHum: " + str(cacheHumScore[0][x][y]) + " " + str(cacheHumScore[1][x][y]) + " " + str(cacheHumScore[2][x][y]) + " " + str(cacheHumScore[3][x][y]))
         broadComScore[x][y] = getScoreWithPoint(x, y, 1, dir)
     elif initChessList[x][y].value == 1:
         broadHumScore[x][y] = 0
@@ -630,11 +760,13 @@ def evalute(value):
 
 # 下子并更新分数
 def put(x, y, value):
+    print("下子--->" + str(y) + " " + str(x) + " " + str(value))
     initChessList[x][y].value = value
     updatePointScore(x, y)
 
 # 撤回并更新分数
 def remove(x, y):
+    print("撤回--->" + str(y) + " " + str(x) + " ")
     initChessList[x][y].value = 0
     updatePointScore(x, y)
 
@@ -647,9 +779,12 @@ def funcMaxMin(deep):
     ABcut = 0
     best = MIN
     points = []
-    points = getAllNextPoints(deep)
+    points = getAllNextPoints(1)
     s = "第一次拿到的points" + str(len(points))
     print(s)
+    for p in points:
+        s =" " + str( p.y ) + " " + str( p.x )
+        print(s)
     resultPoints = []
     alpha = MAX
     beta = MIN
@@ -661,12 +796,15 @@ def funcMaxMin(deep):
             beta = best   # 这里的逻辑有问题：tempBeta = best
 
         # initChessList[p.x][p.y].value = 1
+        s = "极大极小第一层 横坐标 - >" + str(p.y) + "纵坐标 - >" + str(p.x) + "  begin!"
+        print(s)
         put(p.x, p.y, 1)
         v = funcMin(deep - 1, p, MAX, beta)
-        s = "极大极小第一层 横坐标 - >" + str(p.y) + "纵坐标 - >" + str(p.x) + "v - > " + str(v)
-        print(s)
+        
         # initChessList[p.x][p.y].value = 0
         remove(p.x, p.y)
+        s = "极大极小第一层 横坐标 - >" + str(p.y) + "纵坐标 - >" + str(p.x) + "v - > " + str(v) + "结束"
+        print(s)
         if best < v:
             best = v
             resultPoints = []
@@ -692,7 +830,7 @@ def funcMax(deep, p, alpha, beta):
     
     best = MIN
     points = []
-    points = getAllNextPoints(deep)
+    points = getAllNextPoints(1)
     for p in points:
         # initChessList[p.x][p.y].value = 1
         put(p.x, p.y, 1)
@@ -722,7 +860,7 @@ def funcMin(deep, p, alpha, beta):
     
     best = MAX
     points = []
-    points = getAllNextPoints(deep)
+    points = getAllNextPoints(2)
     for p in points:
         # initChessList[p.x][p.y].value = 2
         put(p.x, p.y, 2)
@@ -803,7 +941,7 @@ def main():
     pygame.init()     # 初始化游戏环境
     screen = pygame.display.set_mode((620,620),0,0)          # 创建游戏窗口 # 第一个参数是元组：窗口的长和宽
     pygame.display.set_caption("五子棋")                # 添加游戏标题
-    background = pygame.image.load("images/bg.png")          #加载背景图片
+    background = pygame.image.load("images/bgx.png")          #加载背景图片
     whiteStorn = pygame.image.load("images/storn_white.png") #加载白棋图片
     blackStorn = pygame.image.load("images/storn_black.png") #加载黑棋图片
     resultStorn = pygame.image.load("images/resultStorn.jpg")#加载 赢 时的图片
