@@ -621,7 +621,6 @@ def getAllNextPoints(role):
 
     return result
 
-
 def hasNeighbor(x, y, len):
     if x + len < 15 and initChessList[x + len][y].value != 0:
         return True
@@ -671,11 +670,12 @@ def updateBroadScore(): # 先全部更新，后面再针对性更新
 
 # 更新某个点
 def updatePointScore(x, y): # 先全部更新，后面再针对性更新
+    # print("update!")
     for i in range(0, 9): # 这里没有负数
         tx = x
         ty = y + i - 4
-        if x == 6 and y == 8:
-            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
+        # if x == 6 and y == 8:
+        #     print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
         if ty < 0 or ty > 14:
             continue
         update(tx, ty, 0)  # 靠，忘记改update了
@@ -683,28 +683,31 @@ def updatePointScore(x, y): # 先全部更新，后面再针对性更新
     for i in range(0, 9):
         tx = x + i - 4
         ty = y
-        if x == 6 and y == 8:
-            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
+        # if x == 6 and y == 8:
+        #     print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
         if tx < 0 or tx > 14:
             continue
-        if tx == 5 and ty == 8:
-            print("updatePointScore 8 5 update:")
+        # if tx == 5 and ty == 8:
+        #     print("updatePointScore 8 5 update:")
         update(tx, ty, 1)
 
     for i in range(0, 9):
         tx = x + i - 4
         ty = y + i - 4
-        if x == 6 and y == 8:
-            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
+        # if tx == 6 and ty == 10:
+        #     print("updatePointScore 10 6:" + str(ty) + " " + str(tx))
         if ty < 0 or ty > 14 or tx < 0 or tx > 14:
             continue
         update(tx, ty, 2)
 
     for i in range(0, 9):
         tx = x + i - 4
-        ty = y - i - 4
-        if x == 6 and y == 8:
-            print("updatePointScore 8 6:" + str(ty) + " " + str(tx))
+        # ty = y - i - 4
+        ty = y - i + 4
+        # if x == 7 and y == 9:
+        #     print("tx:" + str(tx) + " ty:" + str(ty))
+        # if tx == 6 and ty == 10:
+        #     print("updatePointScore 10 6:" + str(ty) + " " + str(tx))
         if ty < 0 or ty > 14 or tx < 0 or tx > 14:
             continue
         update(tx, ty, 3)
@@ -712,11 +715,11 @@ def updatePointScore(x, y): # 先全部更新，后面再针对性更新
 
 
 def update(x, y, dir): # 用于更新点里面的函数，指定方向更新
-    if x == 5 and y == 8:
-        print("x5   y8 --->" + str(initChessList[x][y].value))
+    if x == 6 and y == 10:
+        print("10 6 --->" + str(initChessList[x][y].value))
     if initChessList[x][y].value == 0:
         broadHumScore[x][y] = getScoreWithPoint(x, y, 2, dir)
-        if x == 5 and y == 8 and dir == 0:
+        if x == 6 and y == 10 and dir == 0:
             print("scoreHum: " + str(cacheHumScore[0][x][y]) + " " + str(cacheHumScore[1][x][y]) + " " + str(cacheHumScore[2][x][y]) + " " + str(cacheHumScore[3][x][y]))
         broadComScore[x][y] = getScoreWithPoint(x, y, 1, dir)
     elif initChessList[x][y].value == 1:
@@ -726,6 +729,7 @@ def update(x, y, dir): # 用于更新点里面的函数，指定方向更新
         broadHumScore[x][y] = getScoreWithPoint(x, y, 2, dir)
         broadComScore[x][y] = 0
 
+# 初始化是不是搞错了，导致后面的一些位置没有分数
 def initScore():
     i = 0
     for temp in initChessList:
@@ -760,13 +764,13 @@ def evalute(value):
 
 # 下子并更新分数
 def put(x, y, value):
-    print("下子--->" + str(y) + " " + str(x) + " " + str(value))
+    # print("下子--->" + str(y) + " " + str(x) + " " + str(value))
     initChessList[x][y].value = value
     updatePointScore(x, y)
 
 # 撤回并更新分数
 def remove(x, y):
-    print("撤回--->" + str(y) + " " + str(x) + " ")
+    # print("撤回--->" + str(y) + " " + str(x) + " ")
     initChessList[x][y].value = 0
     updatePointScore(x, y)
 
@@ -950,7 +954,8 @@ def main():
 
     rect = blackStorn.get_rect()
     initChessList[7][7].value = 1
-    initScore()  # 初始化分数
+    put(7, 7, 1)
+    # initScore()  # 初始化分数
     while True:
         screen.blit(background,(0,0))
         for temp in initChessList:
